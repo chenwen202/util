@@ -1,1 +1,1 @@
-# util
+﻿﻿﻿﻿### Readme------------------# image viewerIt is a qt c++ project. Its original project is one sample of qt toolset.  I modify it to read raw format image. The default raw image is 4096*4096.It also needs opencv library.
