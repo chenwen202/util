@@ -51,10 +51,14 @@
 #ifndef IMAGEVIEWER_H
 #define IMAGEVIEWER_H
 
+#define _USE_OPENCV_
+
 #include <QMainWindow>
 #include <QImage>
+#ifdef _USE_OPENCV_
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
+#endif
 #include <QGraphicsView>
 
 QT_BEGIN_NAMESPACE
@@ -98,13 +102,16 @@ private slots:
     void about();
 
 private:
-    int read_raw_image(QString filename);
+    int  read_raw_image(QString filename);
     bool loading_raw_image(QString filename);
+
+#ifdef _USE_OPENCV_
     void create_display_image(const cv::Mat& mat);
     void statistics(StatInfo& info, const cv::Mat& mat);
     void decimalNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
     void minmaxNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
     void meanNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
+#endif
 
 private:
     void createActions();

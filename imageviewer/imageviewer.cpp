@@ -53,6 +53,8 @@
 #include <QtWidgets>
 #include <QDebug>
 #include <QFile>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #define MAX_UCHAR     255
 
@@ -323,6 +325,9 @@ void ImageViewer::adjustScrollBar(QScrollBar *scrollBar, double factor)
                             + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
+
+#ifdef _USE_OPENCV_
+
 int ImageViewer::read_raw_image(QString filename)
 {
     QFile file(filename);
@@ -342,11 +347,8 @@ int ImageViewer::read_raw_image(QString filename)
     statistics(info, mat);
 
     cv::Mat dst;
-//    cv::namedWindow("1");
     dst.create(height_, width_, CV_8U);
     minmaxNormalization(dst,info,mat);
-
-//  cv::imshow("1", dst);
 
     create_display_image(dst);
 
@@ -378,14 +380,14 @@ bool ImageViewer::loading_raw_image(QString filename)
 void ImageViewer::create_display_image(const cv::Mat &mat)
 {
     image = new QImage( width_,height_, QImage::Format_RGB888);
-
     for (int i=0;i<height_;i++)
     {
          for (int j=0;j<width_;j++)
          {
-             image->setPixel(i,j,RGB(mat.at<uchar>(i,j),mat.at<uchar>(i,j),mat.at<uchar>(i,j)));
+             image->setPixelColor(j,i,QColor(mat.at<uchar>(i,j),mat.at<uchar>(i,j),mat.at<uchar>(i,j)));
          }
     }
+
 }
 
 static void MinMax(double& min, double& max,const cv::Mat &mat)
@@ -443,6 +445,11 @@ void ImageViewer::statistics(StatInfo &info, const cv::Mat &mat)
     stddeviation(var,mean,mat);
     qDebug() << "var: " << var;
 
+    info.min = min;
+    info.max = max;
+    info.mean = mean;
+    info.var = var;
+
 //    qDebug()<<"***********************";
 
 //    double v1,v2;
@@ -472,7 +479,7 @@ void ImageViewer::minmaxNormalization(cv::Mat &dst, const StatInfo &info, const 
 {
     double v = 0;
     int range = MAX_UCHAR;
-
+    qDebug()<<"info.min: "<< info.min << "info.max: "<< info.max;
     for(int i=0; i < mat.rows; ++i)
         for( int j=0; j < mat.cols; ++j)
         {
@@ -480,6 +487,17 @@ void ImageViewer::minmaxNormalization(cv::Mat &dst, const StatInfo &info, const 
             v = v * range;
             dst.at<uchar>(i,j) = static_cast<uchar>(v);
         }
+    cv::namedWindow("1");
+//    cv::Mat v1;
+//    v1.create(height_, width_, CV_64F);
+//    cv::normalize(mat,v1,1,0,cv::NORM_MINMAX);
+
+//    for(int i=0; i < mat.rows; ++i)
+//        for( int j=0; j < mat.cols; ++j)
+//        {
+//            dst.at<uchar>(i,j) = static_cast<uchar>(v1.at<double>(i,j) * MAX_UCHAR);
+//        }
+    cv::imshow("1",dst);
 }
 
 void ImageViewer::meanNormalization(cv::Mat &dst, const StatInfo &info, const cv::Mat &mat)
@@ -496,3 +514,4 @@ void ImageViewer::meanNormalization(cv::Mat &dst, const StatInfo &info, const cv
         }
 }
 
+#endif
