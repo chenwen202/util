@@ -69,19 +69,6 @@ class QScrollArea;
 class QScrollBar;
 QT_END_NAMESPACE
 
-struct StatInfo{
-    double min;
-    double max;
-    double mean;
-    double var;
-public:
-    StatInfo() {
-        min = max = mean = var = 0.0;
-    }
-};
-
-
-
 class ImageViewer : public QMainWindow
 {
     Q_OBJECT
@@ -107,10 +94,6 @@ private:
 
 #ifdef _USE_OPENCV_
     void create_display_image(const cv::Mat& mat);
-    void statistics(StatInfo& info, const cv::Mat& mat);
-    void decimalNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
-    void minmaxNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
-    void meanNormalization(cv::Mat& dst,const StatInfo& info, const cv::Mat& mat);
 #endif
 
 private:

@@ -343,16 +343,11 @@ int ImageViewer::read_raw_image(QString filename)
     if( len != size)
         return -1;
 
-    StatInfo info;
-    statistics(info, mat);
-
     cv::Mat dst;
     dst.create(height_, width_, CV_8U);
-    minmaxNormalization(dst,info,mat);
-
+    cv::normalize(mat,dst,255,0,cv::NORM_MINMAX);
+//    cv::imwrite("E:\\work\\light\\data\\11.png", dst);
     create_display_image(dst);
-
-
     return 0;
 }
 
@@ -384,134 +379,9 @@ void ImageViewer::create_display_image(const cv::Mat &mat)
     {
          for (int j=0;j<width_;j++)
          {
-             image->setPixelColor(j,i,QColor(mat.at<uchar>(i,j),mat.at<uchar>(i,j),mat.at<uchar>(i,j)));
+             image->setPixelColor(j,i,QColor((int)mat.at<double>(i,j),(int)mat.at<double>(i,j),(int)mat.at<double>(i,j)));
          }
     }
 
 }
-
-static void MinMax(double& min, double& max,const cv::Mat &mat)
-{
-    double v1,v2;
-    v1 = v2 = mat.at<double>(0,0);
-
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            if(mat.at<double>(i,j) < v1)
-                v1 = mat.at<double>(i,j);
-            if(mat.at<double>(i,j) > v2)
-                v2 = mat.at<double>(i,j);
-        }
-    min = v1;
-    max = v2;
-}
-
-static void Mean(double& mean,const cv::Mat &mat)
-{
-    double sum;
-    sum = 0;
-
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            sum += mat.at<double>(i,j);
-        }
-    mean = sum/(mat.rows * mat.cols);
-}
-
-static void stddeviation(double& vr,const double mean, const cv::Mat &mat)
-{
-    double sum;
-    sum = 0;
-
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            sum +=std::pow(( mat.at<double>(i,j) - mean), 2);
-        }
-    vr = std::sqrt( sum/(mat.rows * mat.cols));
-}
-
-void ImageViewer::statistics(StatInfo &info, const cv::Mat &mat)
-{
-    double min, max, mean, var;
-    MinMax(min, max,mat);
-    qDebug() << "min: " << min << " max: " << max;
-
-    Mean(mean,mat);
-    qDebug() << "mean: " << mean;
-
-    stddeviation(var,mean,mat);
-    qDebug() << "var: " << var;
-
-    info.min = min;
-    info.max = max;
-    info.mean = mean;
-    info.var = var;
-
-//    qDebug()<<"***********************";
-
-//    double v1,v2;
-//    cv::minMaxLoc(mat, &v1, &v2);
-//    qDebug()<<"opencv, mean: "<< cv::mean(mat)[0];
-//    qDebug()<<"opencv, min: "<< v1 << " max:" << v2;
-
-//    cv::Scalar me, stddev;
-//    cv::meanStdDev(mat, me, stddev);
-//    qDebug()<<"opencv, mean: "<< me[0] << " stddev:" << stddev[0];
-
-
-}
-
-void ImageViewer::decimalNormalization(cv::Mat &dst, const StatInfo &info, const cv::Mat &mat)
-{
-    double m = ((info.max + 10)/10 ) * 10;
-
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            dst.at<uchar>(i,j) = static_cast<uchar>(mat.at<double>(i,j) * MAX_UCHAR/m );
-        }
-}
-
-void ImageViewer::minmaxNormalization(cv::Mat &dst, const StatInfo &info, const cv::Mat &mat)
-{
-    double v = 0;
-    int range = MAX_UCHAR;
-    qDebug()<<"info.min: "<< info.min << "info.max: "<< info.max;
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            v = (mat.at<double>(i,j) - info.min)/ (info.max - info.min);
-            v = v * range;
-            dst.at<uchar>(i,j) = static_cast<uchar>(v);
-        }
-    cv::namedWindow("1");
-//    cv::Mat v1;
-//    v1.create(height_, width_, CV_64F);
-//    cv::normalize(mat,v1,1,0,cv::NORM_MINMAX);
-
-//    for(int i=0; i < mat.rows; ++i)
-//        for( int j=0; j < mat.cols; ++j)
-//        {
-//            dst.at<uchar>(i,j) = static_cast<uchar>(v1.at<double>(i,j) * MAX_UCHAR);
-//        }
-    cv::imshow("1",dst);
-}
-
-void ImageViewer::meanNormalization(cv::Mat &dst, const StatInfo &info, const cv::Mat &mat)
-{
-    double v = 0;
-    int range = MAX_UCHAR;
-
-    for(int i=0; i < mat.rows; ++i)
-        for( int j=0; j < mat.cols; ++j)
-        {
-            v = (mat.at<double>(i,j) - info.mean)/ info.var;
-            v = v * range;
-            dst.at<uchar>(i,j) = static_cast<uchar>(v);
-        }
-}
-
 #endif
