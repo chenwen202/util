@@ -76,6 +76,7 @@ ImageViewer::ImageViewer(QWidget *parent)
     resize(QGuiApplication::primaryScreen()->availableSize() * 3 / 5);
     width_ = 4096;
     height_= 4096;
+    gray_mode_ = true;
 }
 
 bool ImageViewer::loadFile(const QString &fileName)
@@ -89,8 +90,8 @@ bool ImageViewer::loadFile(const QString &fileName)
                                  .arg(QDir::toNativeSeparators(fileName), reader.errorString()));
         return false;
     }
-
-    setImage(newImage);
+    *image = newImage;
+    setImage();
 
     setWindowFilePath(fileName);
 
@@ -100,7 +101,7 @@ bool ImageViewer::loadFile(const QString &fileName)
     return true;
 }
 
-void ImageViewer::setImage(const QImage &newImage)
+void ImageViewer::setImage()
 {
     //image = newImage;
     imageLabel->setPixmap(QPixmap::fromImage(*image));
@@ -113,6 +114,8 @@ void ImageViewer::setImage(const QImage &newImage)
 
     if (!fitToWindowAct->isChecked())
         imageLabel->adjustSize();
+    if(gray_mode_)
+        grayAct->setChecked(true);
 }
 
 
@@ -191,7 +194,8 @@ void ImageViewer::paste()
     if (newImage.isNull()) {
         statusBar()->showMessage(tr("No image in clipboard"));
     } else {
-        setImage(newImage);
+        *image = newImage;
+        setImage();
         setWindowFilePath(QString());
         const QString message = tr("Obtained image from clipboard, %1x%2, Depth: %3")
             .arg(newImage.width()).arg(newImage.height()).arg(newImage.depth());
@@ -244,6 +248,23 @@ void ImageViewer::about()
                "shows how to use QPainter to print an image.</p>"));
 }
 
+void ImageViewer::gray()
+{
+    gray_mode_ = true;
+    to_display_image(scMat);
+    setImage();
+    colormapAct->setChecked(false);
+
+}
+
+void ImageViewer::colormap()
+{
+    gray_mode_ = false;
+    to_display_image(scMat);
+    setImage();
+    grayAct->setChecked(false);
+}
+
 void ImageViewer::createActions()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
@@ -283,7 +304,17 @@ void ImageViewer::createActions()
     normalSizeAct->setEnabled(false);
 
     viewMenu->addSeparator();
+    grayAct = viewMenu->addAction(tr("&Gray mode"), this, &ImageViewer::gray);
+    grayAct->setEnabled(false);
+    grayAct->setCheckable(true);
+    grayAct->setShortcut(tr("Ctrl+G"));
 
+    colormapAct = viewMenu->addAction(tr("&Color mode"), this, &ImageViewer::colormap);
+    colormapAct->setEnabled(false);
+    colormapAct->setCheckable(true);
+    colormapAct->setShortcut(tr("Ctrl+M"));
+
+    viewMenu->addSeparator();
     fitToWindowAct = viewMenu->addAction(tr("&Fit to Window"), this, &ImageViewer::fitToWindow);
     fitToWindowAct->setEnabled(false);
     fitToWindowAct->setCheckable(true);
@@ -302,6 +333,8 @@ void ImageViewer::updateActions()
     zoomInAct->setEnabled(!fitToWindowAct->isChecked());
     zoomOutAct->setEnabled(!fitToWindowAct->isChecked());
     normalSizeAct->setEnabled(!fitToWindowAct->isChecked());
+    grayAct->setEnabled(!image->isNull());
+    colormapAct->setEnabled(!image->isNull());
 }
 
 void ImageViewer::scaleImage(double factor)
@@ -343,11 +376,11 @@ int ImageViewer::read_raw_image(QString filename)
     if( len != size)
         return -1;
 
-    cv::Mat dst;
-    dst.create(height_, width_, CV_8U);
-    cv::normalize(mat,dst,255,0,cv::NORM_MINMAX);
+    if(scMat.empty() || scMat.rows != height_ || scMat.cols != width_)
+        scMat.create(height_, width_, CV_8U);
+    cv::normalize(mat,scMat,255,0,cv::NORM_MINMAX);
 //    cv::imwrite("E:\\work\\light\\data\\11.png", dst);
-    create_display_image(dst);
+    to_display_image(scMat);
     return 0;
 }
 
@@ -360,8 +393,8 @@ bool ImageViewer::loading_raw_image(QString filename)
                                  .arg(QDir::toNativeSeparators(filename), "null"));
         return false;
     }
-    QImage newImage;
-    setImage(newImage);
+
+    setImage();
 
     setWindowFilePath(filename);
 
@@ -372,16 +405,44 @@ bool ImageViewer::loading_raw_image(QString filename)
     return true;
 }
 
-void ImageViewer::create_display_image(const cv::Mat &mat)
+void ImageViewer::to_display_image(const cv::Mat &mat)
 {
     image = new QImage( width_,height_, QImage::Format_RGB888);
+
+
+    if(gray_mode_)
+    {
+        for (int i=0;i<height_;i++)
+        {
+             for (int j=0;j<width_;j++)
+             {
+                 image->setPixelColor(j,i,QColor((int)mat.at<double>(i,j),(int)mat.at<double>(i,j),(int)mat.at<double>(i,j)));
+             }
+        }
+       return;
+    }
+
+    cv::Mat gM;
+    gM.create(height_, width_,CV_8U);
     for (int i=0;i<height_;i++)
     {
          for (int j=0;j<width_;j++)
          {
-             image->setPixelColor(j,i,QColor((int)mat.at<double>(i,j),(int)mat.at<double>(i,j),(int)mat.at<double>(i,j)));
+             gM.at<uchar>(i,j) = static_cast<uchar>(mat.at<double>(i,j));
          }
     }
+    cv::Mat dst;
+    cv::applyColorMap(gM,dst,cv::COLORMAP_JET);
 
+    qDebug()<<"color map: channel:"<<dst.channels();
+    int ch = dst.channels();
+    for (int i=0;i<height_;i++)
+    {
+        const uchar* ptr1 = dst.ptr<uchar>(i);
+         for (int j=0;j<width_;j++)
+         {
+             image->setPixelColor(j,i,QColor(ptr1[j*ch],ptr1[j*ch+1],ptr1[j*ch+2]));
+         }
+    }
 }
 #endif

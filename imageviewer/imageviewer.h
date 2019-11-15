@@ -87,13 +87,17 @@ private slots:
     void normalSize();
     void fitToWindow();
     void about();
+    void gray();
+    void colormap();
 
 private:
     int  read_raw_image(QString filename);
     bool loading_raw_image(QString filename);
+    bool diplay_in_gray_mode();
+    bool diplay_in_color_mode();
 
 #ifdef _USE_OPENCV_
-    void create_display_image(const cv::Mat& mat);
+    void to_display_image(const cv::Mat& mat);
 #endif
 
 private:
@@ -101,7 +105,7 @@ private:
     void createMenus();
     void updateActions();
     bool saveFile(const QString &fileName);
-    void setImage(const QImage &newImage);
+    void setImage();
     void scaleImage(double factor);
     void adjustScrollBar(QScrollBar *scrollBar, double factor);    
 
@@ -111,6 +115,8 @@ private:
     double scaleFactor;
     int     width_;
     int     height_;
+    cv::Mat scMat;
+    bool    gray_mode_;
 
     QAction *saveAsAct;
     QAction *copyAct;
@@ -118,6 +124,8 @@ private:
     QAction *zoomOutAct;
     QAction *normalSizeAct;
     QAction *fitToWindowAct;
+    QAction *colormapAct;
+    QAction *grayAct;
 };
 
 #endif

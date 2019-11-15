@@ -11,7 +11,7 @@ win32: LIBS += -LC:\opencv_build\install\x86\vc15\lib -lopencv_core410d -lopencv
 INCLUDEPATH += C:\opencv_build\install\include
 DEPENDPATH += C:\opencv_build\install\include
 
-# install
-target.path = $$[QT_INSTALL_EXAMPLES]/widgets/widgets/imageviewer
-INSTALLS += target
+## install
+#target.path = $$[QT_INSTALL_EXAMPLES]/widgets/widgets/imageviewer
+#INSTALLS += target
 
