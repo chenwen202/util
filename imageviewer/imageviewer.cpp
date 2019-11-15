@@ -379,7 +379,7 @@ int ImageViewer::read_raw_image(QString filename)
     if(scMat.empty() || scMat.rows != height_ || scMat.cols != width_)
         scMat.create(height_, width_, CV_8U);
     cv::normalize(mat,scMat,255,0,cv::NORM_MINMAX);
-//    cv::imwrite("E:\\work\\light\\data\\11.png", dst);
+    scMat.convertTo(scMat,CV_8U);
     to_display_image(scMat);
     return 0;
 }
@@ -407,8 +407,8 @@ bool ImageViewer::loading_raw_image(QString filename)
 
 void ImageViewer::to_display_image(const cv::Mat &mat)
 {
-    image = new QImage( width_,height_, QImage::Format_RGB888);
 
+    image = new QImage( width_,height_, QImage::Format_RGB888);
 
     if(gray_mode_)
     {
@@ -416,23 +416,24 @@ void ImageViewer::to_display_image(const cv::Mat &mat)
         {
              for (int j=0;j<width_;j++)
              {
-                 image->setPixelColor(j,i,QColor((int)mat.at<double>(i,j),(int)mat.at<double>(i,j),(int)mat.at<double>(i,j)));
+//                 image->setPixelColor(j,i,QColor((int)mat.at<double>(i,j),(int)mat.at<double>(i,j),(int)mat.at<double>(i,j)));
+                image->setPixelColor(j,i,QColor((int)mat.at<uchar>(i,j),(int)mat.at<uchar>(i,j),(int)mat.at<uchar>(i,j)));
              }
         }
        return;
     }
 
-    cv::Mat gM;
-    gM.create(height_, width_,CV_8U);
-    for (int i=0;i<height_;i++)
-    {
-         for (int j=0;j<width_;j++)
-         {
-             gM.at<uchar>(i,j) = static_cast<uchar>(mat.at<double>(i,j));
-         }
-    }
+//    cv::Mat gM;
+//    gM.create(height_, width_,CV_8U);
+//    for (int i=0;i<height_;i++)
+//    {
+//         for (int j=0;j<width_;j++)
+//         {
+//             gM.at<uchar>(i,j) = static_cast<uchar>(mat.at<double>(i,j));
+//         }
+//    }
     cv::Mat dst;
-    cv::applyColorMap(gM,dst,cv::COLORMAP_JET);
+    cv::applyColorMap(mat,dst,cv::COLORMAP_JET);
 
     qDebug()<<"color map: channel:"<<dst.channels();
     int ch = dst.channels();
